@@ -16,6 +16,10 @@ class SmartCacheQuerySet(models.query.QuerySet):
         return super(SmartCacheQuerySet, self).\
             filter(*args, **mod_kwargs).distinct()
 
+    def _filter_all(self, *args, **kwargs):
+        kwargs['only_valid'] = False
+        return self.filter(*args, **kwargs)
+
     def get(self, *args, **kwargs):
         return super(SmartCacheQuerySet, self).get(*args, **kwargs)
 
@@ -25,8 +29,7 @@ class SmartCacheManager(models.Manager):
         return SmartCacheQuerySet(self.model, using=self._db)
 
     def invalidate(self, *args, **kwargs):
-        kwargs['only_valid'] = False
-        self.filter(*args, **kwargs).update(valid=False)
+        self._filter_all(*args, **kwargs).update(valid=False)
 
     def create(self, value, *args, **kwargs):
         if 'type' not in kwargs.keys():
@@ -43,6 +46,9 @@ class SmartCacheManager(models.Manager):
 
     def get_many(self, *args, **kwargs):
         return self.filter(*args, **kwargs).values_list('value', flat=True)
+
+    def _filter_all(self, *args, **kwargs):
+        return self.get_query_set()._filter_all(*args, **kwargs)
 
 
 class SmartCache(models.Model):
@@ -70,9 +76,20 @@ class SmartCache(models.Model):
         return cls.objects.invalidate(*args, **kwargs)
 
     @classmethod
-    def types_list(self):
+    def type_list(cls):
         return SmartCacheParam.objects.filter(name='type').\
             values_list('value', flat=True).distinct()
+
+    @classmethod
+    def type_param_names(cls, type):
+        if type not in cls.type_list():
+            return None
+
+        some_type_cache = cls.objects._filter_all(type=type)[0]
+        return some_type_cache.param_names()
+
+    def param_names(self):
+        return self.param_set.exclude(name='type').values_list('name', flat=True)
 
     def __unicode__(self):
         return 'Cache '+ ', '.join(
