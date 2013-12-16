@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.exceptions import ValidationError
 
 
 class SmartCacheQuerySet(models.query.QuerySet):
@@ -28,6 +29,9 @@ class SmartCacheManager(models.Manager):
         self.filter(*args, **kwargs).update(valid=False)
 
     def create(self, value, *args, **kwargs):
+        if 'type' not in kwargs.keys():
+            raise ValidationError('Type parameter must be included '
+                                  'to successfully create a cache.')
         smart_cache = self.model(value=value)
         smart_cache.save()
         for k, v in kwargs.items():
@@ -65,6 +69,11 @@ class SmartCache(models.Model):
     def delete(cls, *args, **kwargs):
         return cls.objects.invalidate(*args, **kwargs)
 
+    @classmethod
+    def types_list(self):
+        return SmartCacheParam.objects.filter(name='type').\
+            values_list('value', flat=True).distinct()
+
     def __unicode__(self):
         return 'Cache '+ ', '.join(
             ['%s=%s' % (p.name, p.value) for p in self.param_set.all()])
@@ -77,6 +86,7 @@ class SmartCacheParam(models.Model):
 
     class Meta:
         unique_together = ('name', 'cache')
+        index_together = [['name', 'value',], ]
 
     def __unicode__(self):
         return 'Key Param %s=%s' % (self.name, self.value)
