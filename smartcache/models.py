@@ -23,6 +23,10 @@ class SmartCacheQuerySet(models.query.QuerySet):
     def get(self, *args, **kwargs):
         return super(SmartCacheQuerySet, self).get(*args, **kwargs)
 
+    def all(self, *args, **kwargs):
+        return super(SmartCacheQuerySet, self).\
+            filter(valid=True).all(*args, **kwargs)
+
 
 class SmartCacheManager(models.Manager):
     def get_query_set(self):
@@ -66,6 +70,12 @@ class SmartCache(models.Model):
 
     objects = SmartCacheManager()
     _objects = models.Manager()
+
+    def __init__(self, *args, **kwargs):
+        super(SmartCache, self).__init__(*args, **kwargs)
+        # Calling models.Model delete method for instances
+        # instead of delete @classmethod
+        self.delete = super(SmartCache, self).delete
 
     @classmethod
     def set(cls, value, *args, **kwargs):
