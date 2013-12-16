@@ -35,6 +35,15 @@ class SmartCacheManager(models.Manager):
         if 'type' not in kwargs.keys():
             raise ValidationError('Type parameter must be included '
                                   'to successfully create a cache.')
+
+        caches = SmartCache.objects._filter_all(*args, **kwargs)
+        if caches.exists():
+            smart_cache = caches[0]
+            smart_cache.valid = True
+            smart_cache.value = value
+            smart_cache.save()
+            return
+
         smart_cache = self.model(value=value)
         smart_cache.save()
         for k, v in kwargs.items():
