@@ -47,6 +47,23 @@ class SmartCacheManager(models.Manager):
             smart_cache.save()
             return
 
+        type_list = SmartCache.type_list()
+        cache_type = kwargs['type']
+
+        old_type = True if (cache_type in type_list) else False
+        if old_type:
+            # New objects of this type must follow the same param format
+            type_param_names_set = set(SmartCache.type_param_names(cache_type))
+            new_param_names_set = set([k for k in kwargs.keys() if k != 'type'])
+            if type_param_names_set != new_param_names_set:
+                missing_params = list(type_param_names_set - new_param_names_set)
+                if missing_params:
+                    raise ValidationError('Cache "%s" objects should have %s '
+                        'parameters specified' % (cache_type, missing_params))
+                excess_params = list(new_param_names_set - type_param_names_set)
+                raise ValidationError('Cache "%s" objects should not have these'
+                    ' params specified %s' % (cache_type, excess_params))
+
         smart_cache = self.model(value=value)
         smart_cache.save()
         for k, v in kwargs.items():
