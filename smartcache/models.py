@@ -13,7 +13,6 @@ class SmartCacheQuerySet(models.query.QuerySet):
         for k,v in kwargs.items():
             q = super(SmartCacheQuerySet, q).filter(param_set__name=k,
                                                     param_set__value=v)
-
         return q.distinct()
 
     def _filter_all(self, *args, **kwargs):
