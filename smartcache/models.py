@@ -6,15 +6,15 @@ class SmartCacheQuerySet(models.query.QuerySet):
     def filter(self, *args, **kwargs):
         kwargs.pop('valid', '')
         only_valid = kwargs.pop('only_valid', True)
-        mod_kwargs = {}
-        for k,v in kwargs.items():
-            mod_kwargs['param_set__name'] = k
-            mod_kwargs['param_set__value'] = v
         if only_valid:
-            mod_kwargs['valid'] = True
+            q = super(SmartCacheQuerySet, self).filter(valid=True)
+        else:
+            q = self
+        for k,v in kwargs.items():
+            q = super(SmartCacheQuerySet, q).filter(param_set__name=k,
+                                                    param_set__value=v)
 
-        return super(SmartCacheQuerySet, self).\
-            filter(*args, **mod_kwargs).distinct()
+        return q.distinct()
 
     def _filter_all(self, *args, **kwargs):
         kwargs['only_valid'] = False
@@ -23,9 +23,8 @@ class SmartCacheQuerySet(models.query.QuerySet):
     def get(self, *args, **kwargs):
         return super(SmartCacheQuerySet, self).get(*args, **kwargs)
 
-    def all(self, *args, **kwargs):
-        return super(SmartCacheQuerySet, self).\
-            filter(valid=True).all(*args, **kwargs)
+    def all(self):
+        return super(SmartCacheQuerySet, self).filter(valid=True)
 
 
 class SmartCacheManager(models.Manager):
@@ -59,6 +58,9 @@ class SmartCacheManager(models.Manager):
 
     def get_many(self, *args, **kwargs):
         return self.filter(*args, **kwargs).values_list('value', flat=True)
+
+    def all(self):
+        return self.get_query_set().all()
 
     def _filter_all(self, *args, **kwargs):
         return self.get_query_set()._filter_all(*args, **kwargs)
