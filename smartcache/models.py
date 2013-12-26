@@ -1,6 +1,7 @@
 from django.db import models
 from django.core.exceptions import ValidationError
 
+from tools import to_string
 
 class SmartCacheQuerySet(models.query.QuerySet):
     def filter(self, *args, **kwargs):
@@ -12,7 +13,7 @@ class SmartCacheQuerySet(models.query.QuerySet):
             q = self
         for k,v in kwargs.items():
             q = super(SmartCacheQuerySet, q).filter(param_set__name=k,
-                                                    param_set__value=v)
+                                                    param_set__value=to_string(v))
         return q.distinct()
 
     def _filter_all(self, *args, **kwargs):
@@ -66,7 +67,8 @@ class SmartCacheManager(models.Manager):
         smart_cache = self.model(value=value)
         smart_cache.save()
         for k, v in kwargs.items():
-            cache_param = SmartCacheParam(name=k, value=v, cache=smart_cache)
+            cache_param = SmartCacheParam(name=k, value=to_string(v),
+                                          cache=smart_cache)
             cache_param.save()
 
     def get(self, *args, **kwargs):
