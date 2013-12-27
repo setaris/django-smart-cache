@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 
 from tools import to_string
 
+
 class SmartCacheQuerySet(models.query.QuerySet):
     def filter(self, *args, **kwargs):
         kwargs.pop('valid', '')
@@ -130,6 +131,9 @@ class SmartCache(models.Model):
     def param_names(self):
         return self.param_set.exclude(name='type').values_list('name', flat=True)
 
+    def get_param(self, param_name):
+        return self.param_set.get(name=param_name).value
+
     def __unicode__(self):
         return 'Cache '+ ', '.join(
             ['%s=%s' % (p.name, p.value) for p in self.param_set.all()])
@@ -137,7 +141,7 @@ class SmartCache(models.Model):
 
 class SmartCacheParam(models.Model):
     name = models.CharField(max_length=500)
-    value = models.CharField(max_length=500)
+    value = models.CharField(max_length=5000)
     cache = models.ForeignKey(SmartCache, related_name='param_set')
 
     class Meta:
