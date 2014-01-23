@@ -1,3 +1,5 @@
+import cPickle
+
 from django.db import models
 from django.core.exceptions import ValidationError
 
@@ -40,6 +42,10 @@ class SmartCacheManager(models.Manager):
             raise ValidationError('Type parameter must be included '
                                   'to successfully create a cache.')
 
+        pickle = kwargs.pop('pickle', False)
+        if pickle:
+            value = cPickle.dumps(value)
+
         caches = SmartCache.objects._filter_all(*args, **kwargs)
         if caches.exists():
             smart_cache = caches[0]
@@ -73,10 +79,22 @@ class SmartCacheManager(models.Manager):
             cache_param.save()
 
     def get(self, *args, **kwargs):
-        return self.get_query_set().get(*args, **kwargs).value
+        unpickle = kwargs.pop('unpickle', False)
+        cache_object = self.get_query_set().get(*args, **kwargs)
+        if unpickle:
+            return cPickle.loads(cache_object.value)
+        else:
+            return cache_object.value
 
     def get_many(self, *args, **kwargs):
-        return self.filter(*args, **kwargs).values_list('value', flat=True)
+        unpickle = kwargs.pop('unpickle', False)
+        cache_values = self.filter(*args, **kwargs)\
+            .values_list('value', flat=True)
+        if unpickle:
+            loaded_cache_values = [cPickle.loads(v) for v in cache_values]
+            return loaded_cache_values
+        else:
+            return cache_values
 
     def all(self):
         return self.get_query_set().all()
@@ -127,6 +145,10 @@ class SmartCache(models.Model):
 
         some_type_cache = cls.objects._filter_all(type=type)[0]
         return some_type_cache.param_names()
+
+    @property
+    def unpickled_value(self):
+        return cPickle.loads(self.value)
 
     def param_names(self):
         return self.param_set.exclude(name='type').values_list('name', flat=True)
