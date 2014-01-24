@@ -7,7 +7,7 @@ install_requires = [
 
 setup(
     name = "django-smart-cache",
-    version = '0.1',
+    version = '0.2',
     description = "A Django library that allows flexible database caching" +
         " using composite caching keys.",
     url = "https://github.com/setaris/django-smart-cache",
