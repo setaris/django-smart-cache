@@ -18,7 +18,7 @@ def to_string(obj):
 
 
 def safe_loads(text, encoding='utf-8'):
-    if type(text) == 'unicode':
+    if type(text) == unicode:
         text = text.encode(encoding)
     return cPickle.loads(text)
 
