@@ -1,3 +1,5 @@
+import cPickle
+
 from django.db import models
 
 
@@ -13,4 +15,11 @@ def to_string(obj):
             string_list = tuple(string_list)
         return str(string_list)
     return str(obj)
+
+
+def safe_loads(text, encoding='utf-8'):
+    if type(text) == 'unicode':
+        text = text.encode(encoding)
+    return cPickle.loads(text)
+
 

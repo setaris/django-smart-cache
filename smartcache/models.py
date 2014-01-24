@@ -4,6 +4,7 @@ from django.db import models
 from django.core.exceptions import ValidationError
 
 from tools import to_string
+from tools import safe_loads
 
 
 class SmartCacheQuerySet(models.query.QuerySet):
@@ -82,7 +83,7 @@ class SmartCacheManager(models.Manager):
         unpickle = kwargs.pop('unpickle', False)
         cache_object = self.get_query_set().get(*args, **kwargs)
         if unpickle:
-            return cPickle.loads(cache_object.value)
+            return safe_loads(cache_object.value)
         else:
             return cache_object.value
 
@@ -91,7 +92,7 @@ class SmartCacheManager(models.Manager):
         cache_values = self.filter(*args, **kwargs)\
             .values_list('value', flat=True)
         if unpickle:
-            loaded_cache_values = [cPickle.loads(v) for v in cache_values]
+            loaded_cache_values = [safe_loads(v) for v in cache_values]
             return loaded_cache_values
         else:
             return cache_values
@@ -148,7 +149,7 @@ class SmartCache(models.Model):
 
     @property
     def unpickled_value(self):
-        return cPickle.loads(self.value)
+        return safe_loads(self.value)
 
     def param_names(self):
         return self.param_set.exclude(name='type').values_list('name', flat=True)
