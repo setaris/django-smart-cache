@@ -26,11 +26,6 @@ class SmartCacheQuerySet(models.query.QuerySet):
         kwargs['only_valid'] = False
         return self.filter(*args, **kwargs)
 
-    def filter_invalid(self, * args, **kwargs):
-        kwargs['only_valid'] = False
-        kwargs['valid'] = False
-        return self.filter(*args, **kwargs)
-
     def get(self, *args, **kwargs):
         return super(SmartCacheQuerySet, self).get(*args, **kwargs)
 
@@ -44,6 +39,10 @@ class SmartCacheManager(models.Manager):
 
     def invalidate(self, *args, **kwargs):
         self._filter_all(*args, **kwargs).update(valid=False)
+
+    def filter_invalid(self, * args, **kwargs):
+        kwargs['valid'] = False
+        return self._filter_all(*args, **kwargs)
 
     def create(self, value, *args, **kwargs):
         if 'type' not in kwargs.keys():
