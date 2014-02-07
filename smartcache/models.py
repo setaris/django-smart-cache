@@ -9,10 +9,12 @@ from tools import safe_loads
 
 class SmartCacheQuerySet(models.query.QuerySet):
     def filter(self, *args, **kwargs):
-        kwargs.pop('valid', '')
+        valid = kwargs.pop('valid', None)
         only_valid = kwargs.pop('only_valid', True)
         if only_valid:
             q = super(SmartCacheQuerySet, self).filter(valid=True)
+        elif valid is not None:
+            q = super(SmartCacheQuerySet, self).filter(valid=valid)
         else:
             q = self
         for k,v in kwargs.items():
@@ -22,6 +24,11 @@ class SmartCacheQuerySet(models.query.QuerySet):
 
     def _filter_all(self, *args, **kwargs):
         kwargs['only_valid'] = False
+        return self.filter(*args, **kwargs)
+
+    def filter_invalid(self, * args, **kwargs):
+        kwargs['only_valid'] = False
+        kwargs['valid'] = False
         return self.filter(*args, **kwargs)
 
     def get(self, *args, **kwargs):
